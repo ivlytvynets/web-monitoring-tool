@@ -18,14 +18,18 @@ import java.util.Optional;
 public class UrlDaoImpl implements UrlDao {
     @Override
     public Url create(Url url) {
-        String queryInsert = "INSERT INTO urls (urlName, status) VALUES (?, ?)";
+        String queryInsert = "INSERT INTO urls (url_name, status, ping, code_response, "
+                + "content_size) VALUES (?, ?, ?, ?, ?)";
         try (Connection connection = ConnectionUtil.getConnection();
                 PreparedStatement stInsert = connection.prepareStatement(queryInsert,
                         Statement.RETURN_GENERATED_KEYS);) {
             stInsert.setString(1, url.getUrlName());
             stInsert.setString(2, url.getStatus());
+            stInsert.setInt(3, url.getPing());
+            stInsert.setInt(4, url.getCodeResponse());
+            stInsert.setFloat(5, url.getContentSize());
             stInsert.execute();
-            ResultSet resultSet = stInsert.getResultSet();
+            ResultSet resultSet = stInsert.getGeneratedKeys();
             if (resultSet.next()) {
                 url.setId(resultSet.getObject("GENERATED_KEY", Long.class));
             }
@@ -38,7 +42,7 @@ public class UrlDaoImpl implements UrlDao {
 
     @Override
     public Optional<Url> get(Long id) {
-        String querySelectUrl = "SELECT * FROM urls WHERE id=? AND deleted=FALSE";
+        String querySelectUrl = "SELECT * FROM urls WHERE id=?";
         try (Connection connection = ConnectionUtil.getConnection();
                 PreparedStatement stSelect = connection.prepareStatement(querySelectUrl)) {
             Url url = null;
@@ -55,7 +59,7 @@ public class UrlDaoImpl implements UrlDao {
 
     @Override
     public List<Url> getAll() {
-        String querySelectAll = "SELECT * FROM urls WHERE deleted=FALSE";
+        String querySelectAll = "SELECT * FROM urls";
         try (Connection connection = ConnectionUtil.getConnection();
                 PreparedStatement stSelectAll = connection.prepareStatement(querySelectAll)) {
             List<Url> urls = new ArrayList<>();
@@ -71,12 +75,16 @@ public class UrlDaoImpl implements UrlDao {
 
     @Override
     public Url update(Url url) {
-        String queryUpdate = "UPDATE urls SET urlName=?, status=? WHERE id=? AND deleted=FALSE";
+        String queryUpdate = "UPDATE urls SET urlName=?, status=?, ping=?, code_response=?, "
+                + "content_size=? WHERE id=?";
         try (Connection connection = ConnectionUtil.getConnection();
                 PreparedStatement stUpdate = connection.prepareStatement(queryUpdate)) {
             stUpdate.setString(1, url.getUrlName());
             stUpdate.setString(2, url.getStatus());
-            stUpdate.setLong(3, url.getId());
+            stUpdate.setInt(3, url.getPing());
+            stUpdate.setInt(4, url.getCodeResponse());
+            stUpdate.setFloat(5, url.getContentSize());
+            stUpdate.setLong(6, url.getId());
             stUpdate.executeUpdate();
             return url;
         } catch (SQLException e) {
@@ -99,8 +107,11 @@ public class UrlDaoImpl implements UrlDao {
     private Url getUrlFromResultSet(ResultSet resultSet) throws SQLException {
         Url url = new Url();
         url.setId(resultSet.getObject("id", Long.class));
-        url.setUrlName(resultSet.getString("urlName"));
+        url.setUrlName(resultSet.getString("url_name"));
         url.setStatus(resultSet.getString("status"));
+        url.setPing(resultSet.getObject("ping", Integer.class));
+        url.setCodeResponse(resultSet.getObject("code_response", Integer.class));
+        url.setContentSize(resultSet.getObject("content_size", Float.class));
         return url;
     }
 }
